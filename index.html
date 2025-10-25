@@ -1,15 +1,596 @@
-<!DOCTYPE html>
+=<!DOCTYPE html>
 <html lang="fr">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestion TP</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importation Excel vers Base de Données</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 2px dashed #dee2e6;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        
+        .file-input {
+            position: absolute;
+            left: -9999px;
+        }
+        
+        .file-label {
+            display: inline-block;
+            padding: 15px 30px;
+            background: #3498db;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+        
+        .file-label:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .mapping-section {
+            display: none;
+            margin-bottom: 30px;
+        }
+        
+        .mapping-info {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .columns-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .column-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .column-box h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .column-list {
+            min-height: 200px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .column-item {
+            background: #3498db;
+            color: white;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 6px;
+            cursor: move;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .column-item:hover {
+            background: #2980b9;
+            transform: translateX(5px);
+        }
+        
+        .preview-section {
+            display: none;
+            margin-bottom: 30px;
+        }
+        
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .preview-table th {
+            background: #34495e;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        .preview-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .preview-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+        
+        .btn-primary {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #219a52;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .stats {
+            display: none;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            display: inline-block;
+            margin: 0 20px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-success { color: #27ae60; }
+        .stat-error { color: #e74c3c; }
+        .stat-total { color: #3498db; }
+        
+        .additional-options {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .additional-options label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+    </style>
 </head>
-
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
-</body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Importation Excel vers Base de Données</h1>
+            <p>Importez vos fichiers Excel et mappez les colonnes vers votre base de données</p>
+        </div>
+        
+        <div class="content">
+            <!-- Section Upload -->
+            <div class="upload-section">
+                <h2>1. Sélectionnez votre fichier Excel</h2>
+                <div class="file-input-wrapper">
+                    <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+                    <label for="fileInput" class="file-label">📁 Choisir un fichier Excel</label>
+                </div>
+                <p id="fileName" style="margin-top: 10px; color: #666;"></p>
+            </div>
+            
+            <!-- Alert Messages -->
+            <div id="alertMessage" class="alert"></div>
+            
+            <!-- Section Mapping -->
+            <div id="mappingSection" class="mapping-section">
+                <h2>2. Mappez les colonnes (Optionnel)</h2>
+                <div class="mapping-info">
+                    💡 Conseil : Le mapping des colonnes est optionnel. Si aucune colonne n'est mappée, 
+                    le système tentera de détecter automatiquement les correspondances.
+                </div>
+                
+                <div class="columns-container">
+                    <div class="column-box">
+                        <h3>📋 Colonnes Excel disponibles</h3>
+                        <div id="excelColumns" class="column-list">
+                            <!-- Colonnes Excel seront ajoutées ici -->
+                        </div>
+                    </div>
+                    
+                    <div class="column-box">
+                        <h3>🗃️ Champs Base de Données</h3>
+                        <div id="dbColumns" class="column-list">
+                            <!-- Champs DB seront ajoutés ici -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="additional-options">
+                    <label>
+                        <input type="checkbox" id="createAdditionalTables">
+                        Créer des tables supplémentaires pour les colonnes non mappées
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Section Aperçu -->
+            <div id="previewSection" class="preview-section">
+                <h2>3. Aperçu des données</h2>
+                <div id="dataPreview">
+                    <!-- Aperçu des données sera affiché ici -->
+                </div>
+            </div>
+            
+            <!-- Section Résultats -->
+            <div id="stats" class="stats">
+                <!-- Statistiques seront affichées ici -->
+            </div>
+            
+            <!-- Actions -->
+            <div class="actions">
+                <button id="processBtn" class="btn btn-primary" style="display: none;">
+                    🚀 Valider et importer dans la base de données
+                </button>
+                <button id="resetBtn" class="btn btn-secondary">
+                    🔄 Recommencer
+                </button>
+            </div>
+        </div>
+    </div>
 
+    <script>
+        let currentFileData = null;
+        let columnMapping = {};
+
+        // Éléments DOM
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const mappingSection = document.getElementById('mappingSection');
+        const previewSection = document.getElementById('previewSection');
+        const processBtn = document.getElementById('processBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const alertMessage = document.getElementById('alertMessage');
+        const excelColumns = document.getElementById('excelColumns');
+        const dbColumns = document.getElementById('dbColumns');
+        const dataPreview = document.getElementById('dataPreview');
+        const stats = document.getElementById('stats');
+
+        // Gestionnaire d'upload de fichier
+        fileInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            fileName.textContent = `Fichier sélectionné: ${file.name}`;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentFileData = result;
+                    showAlert('Fichier chargé avec succès!', 'success');
+                    initializeMapping(result);
+                    showPreview(result.data_preview);
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Erreur lors du chargement du fichier', 'error');
+            }
+        });
+
+        // Initialiser le mapping des colonnes
+        async function initializeMapping(data) {
+            // Charger les colonnes prédéfinies
+            const predefinedResponse = await fetch('/get_predefined_columns');
+            const predefinedColumns = await predefinedResponse.json();
+
+            // Afficher les colonnes Excel
+            excelColumns.innerHTML = '';
+            data.columns.forEach(column => {
+                const columnElement = document.createElement('div');
+                columnElement.className = 'column-item';
+                columnElement.textContent = column;
+                columnElement.setAttribute('data-column', column);
+                excelColumns.appendChild(columnElement);
+            });
+
+            // Afficher les champs DB
+            dbColumns.innerHTML = '';
+            predefinedColumns.forEach(field => {
+                const fieldElement = document.createElement('div');
+                fieldElement.className = 'column-item';
+                fieldElement.innerHTML = `
+                    ${field.label}
+                    <small>${field.name}</small>
+                `;
+                fieldElement.setAttribute('data-field', field.name);
+                dbColumns.appendChild(fieldElement);
+            });
+
+            // Activer le drag and drop
+            new Sortable(excelColumns, {
+                group: 'mapping',
+                animation: 150,
+                onEnd: function(evt) {
+                    updateMapping();
+                }
+            });
+
+            new Sortable(dbColumns, {
+                group: 'mapping',
+                animation: 150,
+                onEnd: function(evt) {
+                    updateMapping();
+                }
+            });
+
+            mappingSection.style.display = 'block';
+            previewSection.style.display = 'block';
+            processBtn.style.display = 'block';
+        }
+
+        // Mettre à jour le mapping
+        function updateMapping() {
+            columnMapping = {};
+            const dbFields = dbColumns.querySelectorAll('.column-item');
+            
+            dbFields.forEach(fieldElement => {
+                const field = fieldElement.getAttribute('data-field');
+                const excelColumn = fieldElement.textContent.split('\n')[0].trim();
+                
+                if (excelColumn && field) {
+                    columnMapping[field] = excelColumn;
+                }
+            });
+            
+            console.log('Mapping actuel:', columnMapping);
+        }
+
+        // Afficher l'aperçu des données
+        function showPreview(data) {
+            if (!data || data.length === 0) {
+                dataPreview.innerHTML = '<p>Aucune donnée à afficher</p>';
+                return;
+            }
+
+            const headers = Object.keys(data[0]);
+            let html = `
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            ${headers.map(header => `<th>${header}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    html += `<td>${row[header] || ''}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            dataPreview.innerHTML = html;
+        }
+
+        // Traitement des données
+        processBtn.addEventListener('click', async function() {
+            if (!currentFileData) {
+                showAlert('Veuillez d\'abord sélectionner un fichier', 'error');
+                return;
+            }
+
+            if (Object.keys(columnMapping).length === 0) {
+                if (!confirm('⚠️ Aucune colonne mappée. Voulez-vous continuer avec les colonnes par défaut ?')) {
+                    return;
+                }
+            }
+
+            processBtn.disabled = true;
+            processBtn.textContent = '⏳ Traitement en cours...';
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filepath: currentFileData.filepath,
+                        column_mapping: columnMapping,
+                        create_additional_tables: document.getElementById('createAdditionalTables').checked
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                    showStats(result.stats, result.processed_data);
+                } else {
+                    showAlert(result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Erreur lors du traitement', 'error');
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = '🚀 Valider et importer dans la base de données';
+            }
+        });
+
+        // Afficher les statistiques
+        function showStats(statsData, processedData) {
+            stats.innerHTML = `
+                <h3>📊 Résultats de l'importation</h3>
+                <div class="stat-item">
+                    <span class="stat-number stat-total">${statsData.total}</span>
+                    <span>Total</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number stat-success">${statsData.success}</span>
+                    <span>Succès</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number stat-error">${statsData.errors}</span>
+                    <span>Erreurs</span>
+                </div>
+            `;
+            stats.style.display = 'block';
+        }
+
+        // Réinitialiser
+        resetBtn.addEventListener('click', function() {
+            fileInput.value = '';
+            fileName.textContent = '';
+            mappingSection.style.display = 'none';
+            previewSection.style.display = 'none';
+            processBtn.style.display = 'none';
+            stats.style.display = 'none';
+            alertMessage.style.display = 'none';
+            currentFileData = null;
+            columnMapping = {};
+        });
+
+        // Afficher les alertes
+        function showAlert(message, type) {
+            alertMessage.textContent = message;
+            alertMessage.className = `alert alert-${type}`;
+            alertMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                alertMessage.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
 </html>
